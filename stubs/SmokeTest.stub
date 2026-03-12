@@ -1,0 +1,74 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Organization;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Trafficdesign\SmokeTest\SmokeTestCase;
+
+/**
+ * Smoke-Tests – prüft alle parameterfreien GET-Routen auf 500er.
+ *
+ * Neue Routen werden automatisch mitgetestet.
+ * Ausführen: php artisan test --compact tests/Feature/SmokeTest.php
+ *
+ * @see https://github.com/trafficdesign/laravel-smoke-test
+ */
+class SmokeTest extends SmokeTestCase
+{
+    /**
+     * Routen mit MySQL-spezifischen Queries die unter SQLite nicht laufen.
+     * Nach erstem Test-Lauf befüllen falls nötig.
+     *
+     * @var array<int, string>
+     */
+    protected array $sqliteIncompatibleRoutes = [
+        // 'dashboard',               // Beispiel: nutzt HAVING auf aggregate subquery
+        // 'org-admin/organizations', // Beispiel: nutzt FIELD() für Sortierung
+    ];
+
+    /**
+     * Admin-User für Tests erstellen.
+     * An das Rollen-System des Projekts anpassen.
+     */
+    protected function createAdminUser(): Authenticatable
+    {
+        $organization = Organization::factory()->create([
+            'contract_status' => 'active',
+        ]);
+
+        $role = Role::firstOrCreate(
+            ['organization_id' => $organization->id, 'slug' => 'administrator'],
+            ['name' => 'Administrator', 'is_org_admin' => false]
+        );
+
+        return User::factory()->create([
+            'organization_id' => $organization->id,
+            'role_id' => $role->id,
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Org-Admin-User für Tests erstellen.
+     */
+    protected function createOrgAdminUser(): Authenticatable
+    {
+        $organization = Organization::factory()->create([
+            'contract_status' => 'active',
+        ]);
+
+        $role = Role::firstOrCreate(
+            ['organization_id' => $organization->id, 'slug' => 'organisations-administrator'],
+            ['name' => 'Organisations-Administrator', 'is_org_admin' => true]
+        );
+
+        return User::factory()->create([
+            'organization_id' => $organization->id,
+            'role_id' => $role->id,
+            'email_verified_at' => now(),
+        ]);
+    }
+}
