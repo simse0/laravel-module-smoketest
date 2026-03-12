@@ -2,10 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Organization;
-use App\Models\Role;
-use App\Models\User;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Trafficdesign\SmokeTest\SmokeTestCase;
 
 /**
@@ -16,7 +12,7 @@ use Trafficdesign\SmokeTest\SmokeTestCase;
  *
  * Ausführen: php artisan test --compact tests/Feature/SmokeTest.php
  *
- * @see https://github.com/trafficdesign/laravel-smoke-test
+ * @see https://github.com/simse0/laravel-module-smoketest
  */
 class SmokeTest extends SmokeTestCase
 {
@@ -27,36 +23,25 @@ class SmokeTest extends SmokeTestCase
      *   - Logout / Session-beendende Routen
      *   - Destruktive Aktionen (Account löschen, Daten zurücksetzen)
      *   - Debug-Endpoints (Sentry, Telescope, Horizon)
-     *   - MySQL-spezifische Routen die unter SQLite fehlschlagen
+     *   - Routen mit MySQL-spezifischen Queries die unter SQLite fehlschlagen
      *
      * @var array<int, string>
      */
     protected static array $except = [
         // 'logout',
         // 'user/delete',
-        // 'dashboard',               // MySQL: HAVING auf aggregate subquery
-        // 'org-admin/organizations', // MySQL: FIELD() für Sortierung
+        // 'dashboard', // MySQL: HAVING auf aggregate subquery
     ];
 
     /**
-     * Den höchst-privilegierten User erstellen.
-     * An das Rollen-System des Projekts anpassen.
+     * Optional: createUser() überschreiben wenn das Projekt spezifische
+     * Rollen, Organisationen oder andere Abhängigkeiten benötigt.
+     *
+     * Standard (ohne Override): User::factory()->create(['email_verified_at' => now()])
+     * – funktioniert für alle Standard-Laravel-Projekte ohne Anpassung.
      */
-    protected function createUser(): Authenticatable
-    {
-        $organization = Organization::factory()->create([
-            'contract_status' => 'active',
-        ]);
-
-        $role = Role::firstOrCreate(
-            ['organization_id' => $organization->id, 'slug' => 'administrator'],
-            ['name' => 'Administrator', 'is_org_admin' => false]
-        );
-
-        return User::factory()->create([
-            'organization_id' => $organization->id,
-            'role_id' => $role->id,
-            'email_verified_at' => now(),
-        ]);
-    }
+    // protected function createUser(): \Illuminate\Contracts\Auth\Authenticatable
+    // {
+    //     return \App\Models\User::factory()->withRole('admin')->create();
+    // }
 }

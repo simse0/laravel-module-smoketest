@@ -81,22 +81,13 @@ php artisan vendor:publish --tag=smoke-test
 
 Das erstellt `tests/Feature/SmokeTest.php` auf Basis des mitgelieferten Stubs.
 
-### Schritt 2 – `createUser()` implementieren
-
-Den höchst-privilegierten User erstellen, damit möglichst viele Routen erreichbar sind:
-
-```php
-protected function createUser(): Authenticatable
-{
-    return User::factory()->create(['role' => 'admin']);
-}
-```
-
-### Schritt 3 – Ersten Lauf durchführen
+### Schritt 2 – Ersten Lauf durchführen (kein Setup nötig)
 
 ```bash
 php artisan test tests/Feature/SmokeTest.php
 ```
+
+**Kein weiteres Setup nötig.** Das Package liest das User-Modell automatisch aus `config('auth.providers.users.model')` und erstellt einen Testuser per Factory.
 
 Beim ersten Lauf können einzelne Routen fehlschlagen, die **keine echten Bugs** sind (z.B. destruktive Aktionen, MySQL-spezifische Queries unter SQLite). Diese in `$except` eintragen.
 
@@ -104,7 +95,9 @@ Beim ersten Lauf können einzelne Routen fehlschlagen, die **keine echten Bugs**
 
 ## Konfiguration
 
-Alle Optionen werden als `static` Properties in der eigenen `SmokeTest`-Klasse überschrieben:
+Alle Optionen werden in der eigenen `SmokeTest`-Klasse überschrieben:
+
+### `$except` – Routen ausschließen
 
 ```php
 class SmokeTest extends SmokeTestCase
@@ -124,6 +117,37 @@ class SmokeTest extends SmokeTestCase
         'dashboard',               // MySQL: HAVING auf aggregate subquery
         'org-admin/organizations', // MySQL: FIELD() für Sortierung
     ];
+}
+```
+
+### `createUser()` – Testuser anpassen (optional)
+
+Standardmäßig wird das User-Modell aus `config('auth.providers.users.model')` gelesen und per `factory()->create()` instanziiert. **Das funktioniert für alle Standard-Laravel-Projekte ohne Anpassung.**
+
+Wenn das Projekt spezifische Rollen, Organisationen oder andere Abhängigkeiten benötigt, `createUser()` überschreiben:
+
+```php
+// Einfaches Beispiel: Factory-State
+protected function createUser(): Authenticatable
+{
+    return User::factory()->withRole('admin')->create();
+}
+
+// Komplexes Beispiel: mit Organisations-Kontext
+protected function createUser(): Authenticatable
+{
+    $organization = Organization::factory()->create(['contract_status' => 'active']);
+
+    $role = Role::firstOrCreate(
+        ['organization_id' => $organization->id, 'slug' => 'administrator'],
+        ['name' => 'Administrator', 'is_org_admin' => false]
+    );
+
+    return User::factory()->create([
+        'organization_id' => $organization->id,
+        'role_id' => $role->id,
+        'email_verified_at' => now(),
+    ]);
 }
 ```
 
@@ -152,6 +176,28 @@ Der eingeloggte User kommt aus `createUser()` – damit werden sowohl Auth-Route
 ---
 
 ## Vollständiges Beispiel
+
+### Minimale Version (Standard-Laravel-Projekt)
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use Trafficdesign\SmokeTest\SmokeTestCase;
+
+class SmokeTest extends SmokeTestCase
+{
+    protected static array $except = [
+        'logout',
+    ];
+
+    // createUser() muss nicht implementiert werden –
+    // Standard: User::factory()->create(['email_verified_at' => now()])
+}
+```
+
+### Erweiterte Version (Projekt mit Rollen/Organisationen)
 
 ```php
 <?php

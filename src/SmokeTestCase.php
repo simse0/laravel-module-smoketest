@@ -63,10 +63,27 @@ abstract class SmokeTestCase extends TestCase
     /**
      * Den User für alle Route-Tests erstellen.
      *
-     * Den höchst-privilegierten User verwenden, um maximale Routen-Abdeckung
-     * zu erreichen. Wird einmal pro Testfall aufgerufen.
+     * Standard: liest das User-Modell aus config('auth.providers.users.model')
+     * und erstellt eine Instanz per Factory. Funktioniert out-of-the-box für
+     * alle Standard-Laravel-Projekte.
+     *
+     * Überschreiben wenn das Projekt spezifische Rollen, Organisationen oder
+     * andere Abhängigkeiten benötigt:
+     *
+     *   protected function createUser(): Authenticatable
+     *   {
+     *       return User::factory()->withRole('admin')->create();
+     *   }
      */
-    abstract protected function createUser(): Authenticatable;
+    protected function createUser(): Authenticatable
+    {
+        /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
+        $model = config('auth.providers.users.model');
+
+        return $model::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+    }
 
     /**
      * Prüft dass die Route keinen 4xx oder 5xx Fehler zurückgibt.
