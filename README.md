@@ -43,7 +43,7 @@ Das Package stellt eine abstrakte Basisklasse `SmokeTestCase` bereit. Per `#[Dat
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://github.com/trafficdesign/laravel-smoke-test"
+        "url": "https://github.com/simse0/laravel-module-smoketest"
     }
 ]
 ```
@@ -51,7 +51,7 @@ Das Package stellt eine abstrakte Basisklasse `SmokeTestCase` bereit. Per `#[Dat
 **Schritt 2:** Package als Dev-Dependency installieren:
 
 ```bash
-composer require trafficdesign/laravel-smoke-test:dev-master --dev
+composer require simse0/laravel-module-smoketest:dev-master --dev
 ```
 
 ### Option B – Lokaler Pfad (Monorepo)
@@ -66,7 +66,7 @@ composer require trafficdesign/laravel-smoke-test:dev-master --dev
 ```
 
 ```bash
-composer require trafficdesign/laravel-smoke-test:@dev --dev
+composer require simse0/laravel-module-smoketest:@dev --dev
 ```
 
 ---
