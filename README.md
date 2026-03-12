@@ -95,45 +95,62 @@ Beim ersten Lauf können einzelne Routen fehlschlagen, die **keine echten Bugs**
 
 ## Konfiguration
 
-Alle Optionen werden in der eigenen `SmokeTest`-Klasse überschrieben:
+Alle Optionen werden als static Properties oder Methoden in der eigenen `SmokeTest`-Klasse überschrieben.
 
 ### `$except` – Routen ausschließen
 
 ```php
-class SmokeTest extends SmokeTestCase
+protected static array $except = [
+    'logout',                  // würde den Test-User ausloggen
+    'user/delete',             // destruktive Aktion
+    'dashboard',               // MySQL: HAVING auf aggregate subquery
+    'org-admin/organizations', // MySQL: FIELD() für Sortierung
+];
+```
+
+### `$onlyPrefixes` – nur bestimmte Bereiche testen (optional)
+
+```php
+// Nur Routen unter /admin/* und /dashboard/* testen
+protected static array $onlyPrefixes = ['admin', 'dashboard'];
+```
+
+### `$frameworkExcluded` – interne Routen erweitern (optional)
+
+Standard: `up`, `sanctum/csrf-cookie`, `_ignition/health-check`.  
+Projektspezifische interne Routen ergänzen:
+
+```php
+protected static array $frameworkExcluded = [
+    'up', 'sanctum/csrf-cookie', '_ignition/health-check',
+    'horizon',    // Laravel Horizon Dashboard
+    'telescope',  // Laravel Telescope
+];
+```
+
+### `setUpSmokeTest()` – zusätzliches Setup (optional)
+
+Wird nach `RefreshDatabase` ausgeführt. Hier z.B. Seeder laufen lassen:
+
+```php
+protected function setUpSmokeTest(): void
 {
-    /**
-     * Routen, die grundsätzlich übersprungen werden (exakter URI-Match).
-     *
-     * Typische Kandidaten:
-     *   - Logout / Session-beendende Routen (würden den Test-User ausloggen)
-     *   - Destruktive Aktionen (Account löschen, Daten zurücksetzen)
-     *   - Debug-Endpoints (Sentry, Telescope, Horizon)
-     *   - Routen mit MySQL-spezifischen Queries, die unter SQLite fehlschlagen
-     */
-    protected static array $except = [
-        'logout',
-        'user/delete-account',
-        'dashboard',               // MySQL: HAVING auf aggregate subquery
-        'org-admin/organizations', // MySQL: FIELD() für Sortierung
-    ];
+    $this->seed(\Database\Seeders\PermissionSeeder::class);
 }
 ```
 
 ### `createUser()` – Testuser anpassen (optional)
 
-Standardmäßig wird das User-Modell aus `config('auth.providers.users.model')` gelesen und per `factory()->create()` instanziiert. **Das funktioniert für alle Standard-Laravel-Projekte ohne Anpassung.**
-
-Wenn das Projekt spezifische Rollen, Organisationen oder andere Abhängigkeiten benötigt, `createUser()` überschreiben:
+Standard: liest `config('auth.providers.users.model')` und erstellt einen User per Factory. Für alle Standard-Laravel-Projekte ohne Anpassung.
 
 ```php
-// Einfaches Beispiel: Factory-State
+// Einfach: Factory-State
 protected function createUser(): Authenticatable
 {
     return User::factory()->withRole('admin')->create();
 }
 
-// Komplexes Beispiel: mit Organisations-Kontext
+// Komplex: mit Organisations-Kontext
 protected function createUser(): Authenticatable
 {
     $organization = Organization::factory()->create(['contract_status' => 'active']);
@@ -146,7 +163,6 @@ protected function createUser(): Authenticatable
     return User::factory()->create([
         'organization_id' => $organization->id,
         'role_id' => $role->id,
-        'email_verified_at' => now(),
     ]);
 }
 ```

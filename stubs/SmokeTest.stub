@@ -17,13 +17,7 @@ use Trafficdesign\SmokeTest\SmokeTestCase;
 class SmokeTest extends SmokeTestCase
 {
     /**
-     * Routen die vom Test ausgeschlossen werden.
-     *
-     * Typische Kandidaten:
-     *   - Logout / Session-beendende Routen
-     *   - Destruktive Aktionen (Account löschen, Daten zurücksetzen)
-     *   - Debug-Endpoints (Sentry, Telescope, Horizon)
-     *   - Routen mit MySQL-spezifischen Queries die unter SQLite fehlschlagen
+     * Routen die übersprungen werden (exakter URI-Match).
      *
      * @var array<int, string>
      */
@@ -33,13 +27,24 @@ class SmokeTest extends SmokeTestCase
         // 'dashboard', // MySQL: HAVING auf aggregate subquery
     ];
 
-    /**
-     * Optional: createUser() überschreiben wenn das Projekt spezifische
-     * Rollen, Organisationen oder andere Abhängigkeiten benötigt.
-     *
-     * Standard (ohne Override): User::factory()->create(['email_verified_at' => now()])
-     * – funktioniert für alle Standard-Laravel-Projekte ohne Anpassung.
-     */
+    // ─── Weitere optionale Einstellungen ───────────────────────────────────
+
+    // Nur bestimmte URL-Präfixe testen (leer = alles):
+    // protected static array $onlyPrefixes = ['admin', 'dashboard'];
+
+    // Eigene interne/framework Routen zu den globalen Ausschlüssen hinzufügen:
+    // protected static array $frameworkExcluded = [
+    //     'up', 'sanctum/csrf-cookie', '_ignition/health-check',
+    //     'horizon', 'telescope', // projektspezifisch ergänzen
+    // ];
+
+    // Zusätzliches Setup nach DB-Reset (z.B. Seeder):
+    // protected function setUpSmokeTest(): void
+    // {
+    //     $this->seed(\Database\Seeders\PermissionSeeder::class);
+    // }
+
+    // User mit spezifischen Rollen/Organisationen erstellen:
     // protected function createUser(): \Illuminate\Contracts\Auth\Authenticatable
     // {
     //     return \App\Models\User::factory()->withRole('admin')->create();
